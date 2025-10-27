@@ -4,73 +4,77 @@ Database: https://www.db-fiddle.com/f/pxMci1sLL945KHKYvpe9W6/1
 
 #1. All VIPs with their assigned hotels, indicating whether they RSVP’d for the welcome reception and the thank-you dinner.
 
-SELECT vips.last_name ||' '|| vips.first_name AS name, hotels.hotel_name, 
+SELECT v.last_name ||' '|| v.first_name AS name, h.hotel_name, 
 
 CASE WHEN welcome_rsvp = 1 THEN 'Yes' ELSE 'No'
 END AS rsvp_reception, 
 
 CASE WHEN dinner_rsvp = 1 THEN 'Yes' ELSE 'No'
 END AS rsvp_dinner
-FROM vips
-LEFT JOIN reservations
-ON vips.member_id = reservations.member_id
 
-LEFT JOIN hotels
-ON reservations.hotel = hotels.hotel_id;
+FROM vips AS v
+LEFT JOIN reservations AS r
+ON v.member_id = r.member_id
+
+LEFT JOIN hotels AS h
+ON r.hotel = h.hotel_id;
+
 
  #2. VIPs giving feedback to other VIPs, including both the feedback giver’s and recipient’s names, along with the event name the feedback is about.
  
-SELECT giver.first_name ||' '|| giver.last_name AS givers_name, recipient.first_name ||' '|| recipient.last_name AS recipient_name, events.event_name
-FROM vips giver
-JOIN vips recipient
-ON giver.provides_feedback_to = recipient.member_id
+SELECT g.first_name ||' '|| g.last_name AS givers_name, r.first_name ||' '|| r.last_name AS recipient_name, e.event_name
+FROM vips AS g
+JOIN vips AS r
+ON g.provides_feedback_to = r.member_id
 
-JOIN events
-ON recipient.event = events.event_id;
+JOIN events AS e
+ON r.event = e.event_id;
+
 
 #3. Number of VIPs participating at each event (keynote, panel, workshop), and the type of event it is.
 
-SELECT events.event_type,COUNT(vips.member_id) AS no_participating
-FROM events
-JOIN vips
-ON events.event_id = vips.event
-GROUP BY events.event_type;
+SELECT e.event_type,COUNT(v.member_id) AS no_participating
+FROM events AS e
+JOIN vips AS v
+ON e.event_id = v.event
+GROUP BY e.event_type;
 
 #4. The longest-standing VIP members who are still active in this year’s conference, and the events they are presenting at.
 
-SELECT first_name ||' '|| last_name AS name, vips.member_since, events.event_name
-FROM vips
-JOIN events
-ON vips.event = events.event_id
-WHERE vips.member_since < (SELECT AVG(member_since)FROM vips);
+SELECT v.first_name ||' '|| v.last_name AS name, v.member_since, e.event_name
+FROM vips AS v
+JOIN events AS e
+ON v.event = e.event_id
+WHERE v.member_since < (SELECT AVG(member_since)FROM vips);
  
 
 #5. The total number of VIP reservations for each hotel. Including hotels with no current VIP bookings
 
-SELECT hotels.hotel_name, COUNT(reservations.member_id) AS total_reservations 
-FROM hotels
-LEFT JOIN reservations
-ON hotels.hotel_id = reservations.hotel
-GROUP BY hotels.hotel_name;
+SELECT h.hotel_name, COUNT(r.member_id) AS total_reservations 
+FROM hotels AS h
+LEFT JOIN reservations AS r
+ON h.hotel_id = r.hotel
+GROUP BY h.hotel_name;
 
 #6. Percentage of VIPs attending the panel that also RSVP’d “yes” to the dinner?
 
 SELECT 
 (
-	(SELECT COUNT(vips.member_id)
-	 FROM vips
-	 JOIN events	
-	 ON vips.event = events.event_id
-	 JOIN reservations
-	 ON vips.member_id = reservations.member_id
-	 WHERE event_type = 'Panel'
-	 AND reservations.dinner_rsvp = 1) *100 /
+	(SELECT COUNT(v.member_id)
+	 FROM vips AS v
+	 JOIN events AS e	
+	 ON v.event = e.event_id
+	 JOIN reservations AS r
+	 ON v.member_id = r.member_id
+	 WHERE e.event_type = 'Panel'
+	 AND r.dinner_rsvp = 1) *100 /
     
-     (SELECT COUNT(vips.member_id)
-	  FROM vips
-	  JOIN events	
-	  ON vips.event = events.event_id 
-      WHERE event_type = 'Panel')
+     (SELECT COUNT(v.member_id)
+	  FROM vips AS v
+	  JOIN events AS e	
+	  ON v.event = e.event_id 
+      WHERE e.event_type = 'Panel')
         
 ) AS percent_panel_dinner_rsvp;
+
  
