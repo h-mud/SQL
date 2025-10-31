@@ -1,0 +1,70 @@
+# For this project, I used Spotify data from Kaggle.
+# Then I created a table to insert Spotify data into.
+# Finally, I performed analysis on the data using SQL. 
+
+#Creating the table: 
+CREATE TABLE BIT_DB.Spotifydata (
+id integer PRIMARY KEY,
+artist_name varchar NOT NULL,
+track_name varchar NOT NULL,
+track_id varchar NOT NULL,
+popularity integer NOT NULL,
+danceability decimal(4,3) NOT NULL,
+energy decimal(4,3) NOT NULL,
+key integer NOT NULL,
+loudness decimal(5,3) NOT NULL,
+mode integer NOT NULL,
+speechiness decimal(5,4) NOT NULL,
+acousticness decimal(6,5) NOT NULL,
+instrumentalness text NOT NULL,
+liveness decimal(5,4) NOT NULL,
+valence decimal(4,3) NOT NULL,
+tempo decimal(6,3) NOT NULL,
+duration_ms integer NOT NULL,
+time_signature integer NOT NULL 
+)
+
+#Then I inserted the Spotify Data .csv into the table.
+
+#Next, I explored the data using the following SQL. 
+
+--1. Which artist has the most songs in the Spotify Top 50 (2021),and how many are there?
+
+SELECT artist_name, COUNT(artist_name) AS most_songs
+FROM BIT_DB.Spotifydata
+GROUP BY artist_name
+ORDER BY most_songs DESC
+LIMIT 1;
+
+--2. Who are the top 10 artists based on popularity? 
+
+SELECT DISTINCT artist_name, popularity
+FROM BIT_DB.Spotifydata
+ORDER BY popularity DESC
+LIMIT 10;
+
+--3. What is the average danceability score of the Top 5 popular songs?
+
+SELECT AVG(danceability) AS avg_danceability
+FROM BIT_DB.Spotifydata
+WHERE danceability IN 
+    (SELECT danceability
+        FROM BIT_DB.Spotifydata
+        ORDER BY popularity DESC
+        LIMIT 5);
+
+-- 4. Find the top 5 longest songs by duration.
+     
+SELECT track_name,duration_ms
+FROM BIT_DB.Spotifydata
+ORDER BY duration_ms DESC
+LIMIT 5;
+
+--5. Identify any artists whose songs have consistently high popularity but low danceability.
+
+SELECT artist_name
+FROM BIT_DB.Spotifydata 
+WHERE popularity > (SELECT AVG(popularity) AS avg_popularity FROM BIT_DB.Spotifydata)  
+AND danceability < (SELECT AVG(danceability) AS avg_danceability FROM BIT_DB.Spotifydata) 
+GROUP BY artist_name
+HAVING COUNT(artist_name) > 1 
